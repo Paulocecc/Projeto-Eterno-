@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lista de Compras · Projeto Eterno</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0d0d0d;
+    --surface: #161616;
+    --card:    #1e1e1e;
+    --border:  #2a2a2a;
+    --red:     #e03030;
+    --text:    #f0f0f0;
+    --muted:   #777;
+    --done:    #2ecc71;
+    --green-dim: #0f3320;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 20px 14px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-row { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 3px; color: var(--red); }
+  .subtitle { color: var(--muted); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; }
+
+  .controls {
+    display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center;
+  }
+  .ctrl-btn {
+    background: var(--card); border: 1px solid var(--border); color: var(--muted);
+    padding: 5px 14px; border-radius: 20px; cursor: pointer; font-size: 12px;
+    font-family: 'Inter', sans-serif; transition: all .15s;
+  }
+  .ctrl-btn:hover { border-color: var(--red); color: var(--text); }
+  .progress-pill {
+    margin-left: auto;
+    background: var(--card); border: 1px solid var(--border);
+    padding: 5px 14px; border-radius: 20px; font-size: 12px; color: var(--muted);
+  }
+  .progress-pill strong { color: var(--done); }
+
+  main { max-width: 700px; margin: 0 auto; padding: 24px 16px; }
+
+  .page-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 42px; letter-spacing: 2px; line-height: 1;
+    margin-bottom: 4px;
+  }
+  .page-meta { color: var(--muted); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 24px; }
+
+  /* CATEGORY */
+  .category { margin-bottom: 10px; }
+  .cat-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    user-select: none;
+  }
+  .cat-icon { font-size: 18px; line-height: 1; }
+  .cat-name { font-weight: 600; font-size: 13px; flex: 1; letter-spacing: .3px; }
+  .cat-count { font-size: 11px; color: var(--muted); }
+  .cat-chevron { color: var(--muted); font-size: 11px; transition: transform .2s; }
+  .category.open .cat-chevron { transform: rotate(180deg); }
+  .category.open .cat-header { border-radius: 8px 8px 0 0; border-bottom-color: transparent; }
+
+  .cat-body { display: none; border: 1px solid var(--border); border-top: none; border-radius: 0 0 8px 8px; overflow: hidden; }
+  .category.open .cat-body { display: block; }
+
+  /* ITEM */
+  .item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    transition: background .1s;
+    cursor: pointer;
+  }
+  .item:last-child { border-bottom: none; }
+  .item:hover { background: rgba(255,255,255,.02); }
+  .item.checked { opacity: .45; }
+  .item.checked .item-name { text-decoration: line-through; color: var(--muted); }
+
+  .checkbox {
+    width: 20px; height: 20px; border-radius: 5px;
+    border: 1.5px solid var(--border);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .item.checked .checkbox { background: var(--done); border-color: var(--done); }
+  .check-icon { color: #fff; font-size: 12px; display: none; }
+  .item.checked .check-icon { display: block; }
+
+  .item-name { flex: 1; font-size: 13px; font-weight: 500; }
+  .item-qty {
+    font-size: 12px; font-weight: 700; color: var(--red);
+    background: rgba(224,48,48,.1); border-radius: 5px; padding: 2px 8px;
+    white-space: nowrap;
+  }
+  .item-note { font-size: 10px; color: var(--muted); width: 100%; margin-top: 2px; padding-left: 32px; }
+
+  /* TOTALS */
+  .totals-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; margin-bottom: 20px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  }
+  .total-item { text-align: center; }
+  .total-val { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--red); line-height: 1; }
+  .total-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+  @media (max-width: 500px) {
+    .totals-card { grid-template-columns: repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <div class="logo">PROJETO ETERNO</div>
+    <div class="subtitle">Lista de Compras · 7 dias · Paulo Bonfim</div>
+  </div>
+  <div class="controls">
+    <button class="ctrl-btn" onclick="expandAll()">Expandir tudo</button>
+    <button class="ctrl-btn" onclick="collapseAll()">Recolher tudo</button>
+    <button class="ctrl-btn" onclick="clearAll()">Limpar marcações</button>
+    <div class="progress-pill"><strong id="prog-done">0</strong> / <span id="prog-total">0</span> itens</div>
+  </div>
+</header>
+
+<main>
+  <div class="page-title">LISTA DE<br>COMPRAS</div>
+  <div class="page-meta">Dieta Projeto Eterno · ~2.250 kcal/dia · 7 dias</div>
+
+  <div class="totals-card">
+    <div class="total-item"><div class="total-val">~2.250</div><div class="total-lbl">kcal/dia</div></div>
+    <div class="total-item"><div class="total-val">180g</div><div class="total-lbl">Proteína/dia</div></div>
+    <div class="total-item"><div class="total-val">215g</div><div class="total-lbl">Carbo/dia</div></div>
+    <div class="total-item"><div class="total-val">70g</div><div class="total-lbl">Gordura/dia</div></div>
+  </div>
+
+  <div id="list"></div>
+</main>
+
+<script>
+const CATEGORIES = [
+  {
+    icon: '🥩',
+    name: 'Proteínas Animais',
+    items: [
+      { name: 'Peito de frango', qty: '1,8 kg', note: 'Para almoço (180g/dia × 7 dias) + lanche e tapioca' },
+      { name: 'Patinho moído', qty: '700 g', note: 'Alternativa de almoço (160g × 4 dias)' },
+      { name: 'Salmão', qty: '500 g', note: 'Jantar opção 1 (160g × 3 dias)' },
+      { name: 'Tilápia / filé de peixe', qty: '700 g', note: 'Almoço opção 3 e substituto de salmão' },
+      { name: 'Ovos inteiros', qty: '2 dúzias', note: 'Café, omelete e ceia (2–3 ovos/dia)' },
+      { name: 'Claras de ovo / clara pasteurizada', qty: '1 L', note: 'Café da manhã e ceia (~150–200g/uso)' },
+      { name: 'Atum em água (lata)', qty: '4 latas', note: 'Substituto de frango no lanche (120g/lata)' },
+    ]
+  },
+  {
+    icon: '🥛',
+    name: 'Laticínios e Proteínas Frias',
+    items: [
+      { name: 'Iogurte grego natural integral zero', qty: '1,4 kg', note: 'Bowl café (200g) + ceia (250g) × 4 dias' },
+      { name: 'Cottage cheese', qty: '500 g', note: 'Tapioca do café + ceia (200g/dia)' },
+      { name: 'Queijo minas light', qty: '200 g', note: 'Sanduíche do lanche (40g × 4 dias)' },
+      { name: 'Whey protein (sachê ou pote)', qty: '700 g', note: '30g/uso · shake pré/pós e bowl do café' },
+      { name: 'Caseína (opcional)', qty: '300 g', note: 'Ceia alternativa (30g/dose)' },
+    ]
+  },
+  {
+    icon: '🍚',
+    name: 'Carboidratos e Grãos',
+    items: [
+      { name: 'Arroz branco', qty: '2 kg', note: 'Almoço e jantar (~150–180g cozido/refeição)' },
+      { name: 'Batata doce', qty: '2 kg', note: 'Alternativa de almoço e jantar (230–250g/refeição)' },
+      { name: 'Batata inglesa', qty: '1 kg', note: 'Purê do jantar opção 2 (260g × 3 dias)' },
+      { name: 'Mandioca cozida / congelada', qty: '700 g', note: 'Jantar opção 3 (180g × 3 dias)' },
+      { name: 'Macarrão integral', qty: '500 g', note: 'Almoço opção 3 e jantar opção 3 (200g coz.)' },
+      { name: 'Feijão (cozido ou enlatado)', qty: '700 g', note: 'Almoço clássico (100g × 5 dias)' },
+      { name: 'Aveia em flocos finos', qty: '500 g', note: 'Bowl café (40g) + shake lanche (30g) × 7 dias' },
+      { name: 'Pão integral (fatiado)', qty: '1 pacote', note: 'Café opção 1 (60g) + lanche opção 2 (70g)' },
+      { name: 'Goma de tapioca', qty: '300 g', note: 'Café opção 3 (60g × 3 dias)' },
+      { name: 'Granola sem açúcar', qty: '250 g', note: 'Iogurte do lanche (35g × 4 dias)' },
+    ]
+  },
+  {
+    icon: '🥦',
+    name: 'Legumes e Vegetais',
+    items: [
+      { name: 'Brócolis', qty: '1 kg', note: 'Almoço e jantar (200g/refeição · livre)' },
+      { name: 'Abobrinha', qty: '600 g', note: 'Legumes do almoço (200g × 3 dias)' },
+      { name: 'Cenoura', qty: '500 g', note: 'Legumes mistos' },
+      { name: 'Couve-flor', qty: '500 g', note: 'Alternativa de legumes' },
+      { name: 'Tomate', qty: '500 g', note: 'Salada + lanche (sanduíche)' },
+      { name: 'Folhas para salada (mix)', qty: '2 sacos', note: 'Almoço e jantar diariamente' },
+      { name: 'Pepino', qty: '3 unid.', note: 'Salada do almoço' },
+    ]
+  },
+  {
+    icon: '🍌',
+    name: 'Frutas',
+    items: [
+      { name: 'Banana', qty: '1,5 kg (~10 unid.)', note: 'Shake pré-treino (120g) + substituição no café' },
+      { name: 'Mamão papaia', qty: '2 unid.', note: 'Café opção 1 (150g × 4 dias)' },
+      { name: 'Maçã', qty: '6 unid.', note: 'Tapioca do café + lanche (130g × 5 dias)' },
+      { name: 'Frutas vermelhas (congeladas)', qty: '500 g', note: 'Bowl do café opção 2 (100g × 4 dias)' },
+      { name: 'Morango', qty: '400 g', note: 'Iogurte do lanche (120g × 3 dias)' },
+      { name: 'Kiwi', qty: '4 unid.', note: 'Ceia opção 2 (80g × 4 dias)' },
+    ]
+  },
+  {
+    icon: '🫒',
+    name: 'Gorduras Boas',
+    items: [
+      { name: 'Azeite de oliva extra virgem', qty: '500 ml', note: '10g/refeição · almoço e jantar diariamente' },
+      { name: 'Pasta de amendoim (sem adição de açúcar)', qty: '1 pote 350g', note: 'Bowl café (10g × 4 dias)' },
+      { name: 'Castanhas (mix ou castanha-do-pará)', qty: '200 g', note: 'Ceia opção 1 (15g × 5 dias)' },
+      { name: 'Mel puro', qty: '1 frasco', note: 'Iogurte do lanche (10g × 4 dias)' },
+    ]
+  },
+  {
+    icon: '🧴',
+    name: 'Suplementos',
+    items: [
+      { name: 'Creatina monohidratada', qty: '1 pote 300g', note: '5g/dia · suficiente para 60 dias' },
+      { name: 'Ômega-3 (EPA+DHA)', qty: '1 frasco 60 caps', note: '1–2g de EPA+DHA/dia' },
+      { name: 'Magnésio glicinato', qty: '1 frasco', note: '200–400mg à noite antes de dormir' },
+      { name: 'Psyllium (casca)', qty: '1 pote 300g', note: '5–10g/dia longe de medicamentos' },
+      { name: 'Vitamina D3 (se indicado)', qty: '1 frasco', note: '1.000–2.000 UI/dia com refeição gordurosa' },
+    ]
+  },
+  {
+    icon: '🧂',
+    name: 'Temperos e Outros',
+    items: [
+      { name: 'Sal refinado', qty: '1 pacote', note: 'Manter sódio estável, não cortar' },
+      { name: 'Canela em pó', qty: '1 unid.', note: 'Ceia com cottage (opção 1)' },
+      { name: 'Chia', qty: '200 g', note: 'Café opção 1 (10g × 5 dias)' },
+      { name: 'Café puro (sem açúcar)', qty: '1 pacote', note: 'Diariamente, sem açúcar ou com adoçante' },
+      { name: 'Adoçante (se necessário)', qty: '1 unid.', note: 'Para café e iogurtes' },
+      { name: 'Frango desfiado (opção pronto)', qty: '1 pote', note: 'Praticidade para tapioca e lanche rápido' },
+    ]
+  },
+];
+
+// ── BUILD ──
+const listEl = document.getElementById('list');
+const progDone = document.getElementById('prog-done');
+const progTotal = document.getElementById('prog-total');
+
+let totalItems = 0;
+
+CATEGORIES.forEach((cat, ci) => {
+  const catEl = document.createElement('div');
+  catEl.className = 'category open';
+  catEl.id = `cat-${ci}`;
+
+  const itemsHTML = cat.items.map((item, ii) => {
+    const k = `pe_shop_${ci}_${ii}`;
+    const checked = localStorage.getItem(k) === '1';
+    totalItems++;
+    return `
+      <div class="item${checked ? ' checked' : ''}" data-key="${k}" onclick="toggleItem(this)">
+        <div class="checkbox"><span class="check-icon">✓</span></div>
+        <div style="flex:1">
+          <div class="item-name">${item.name}</div>
+          ${item.note ? `<div class="item-note">${item.note}</div>` : ''}
+        </div>
+        <div class="item-qty">${item.qty}</div>
+      </div>`;
+  }).join('');
+
+  const doneCount = cat.items.filter((_, ii) => localStorage.getItem(`pe_shop_${ci}_${ii}`) === '1').length;
+
+  catEl.innerHTML = `
+    <div class="cat-header" onclick="toggleCat(${ci})">
+      <div class="cat-icon">${cat.icon}</div>
+      <div class="cat-name">${cat.name}</div>
+      <div class="cat-count" id="cat-count-${ci}">${doneCount}/${cat.items.length}</div>
+      <div class="cat-chevron">▾</div>
+    </div>
+    <div class="cat-body">${itemsHTML}</div>`;
+
+  listEl.appendChild(catEl);
+});
+
+progTotal.textContent = totalItems;
+updateProgress();
+
+// ── FUNCTIONS ──
+function toggleItem(el) {
+  el.classList.toggle('checked');
+  const k = el.dataset.key;
+  localStorage.setItem(k, el.classList.contains('checked') ? '1' : '0');
+  updateProgress();
+}
+
+function toggleCat(ci) {
+  document.getElementById(`cat-${ci}`).classList.toggle('open');
+}
+
+function expandAll() {
+  document.querySelectorAll('.category').forEach(c => c.classList.add('open'));
+}
+function collapseAll() {
+  document.querySelectorAll('.category').forEach(c => c.classList.remove('open'));
+}
+function clearAll() {
+  document.querySelectorAll('.item').forEach(el => {
+    el.classList.remove('checked');
+    localStorage.removeItem(el.dataset.key);
+  });
+  updateProgress();
+}
+
+function updateProgress() {
+  let done = document.querySelectorAll('.item.checked').length;
+  progDone.textContent = done;
+
+  CATEGORIES.forEach((cat, ci) => {
+    const total = cat.items.length;
+    let catDone = 0;
+    cat.items.forEach((_, ii) => {
+      if (localStorage.getItem(`pe_shop_${ci}_${ii}`) === '1') catDone++;
+    });
+    const el = document.getElementById(`cat-count-${ci}`);
+    if (el) el.textContent = `${catDone}/${total}`;
+  });
+}
+</script>
+</body>
+</html>
